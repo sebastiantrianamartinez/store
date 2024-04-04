@@ -1,37 +1,70 @@
-const { faker } = require('@faker-js/faker');
+const { Model, DataTypes } = require('sequelize');
+const Product = require('../models/products.model');
+const boom = require('@hapi/boom');
 
-class Products {
-
-    constructor(limit){
-        this.products = [];
-        this.emulate(limit);
+class ProductsController {
+  async create(productData) {
+    try {
+      // Crear un nuevo producto usando el modelo de Sequelize y los datos recibidos
+      const newProduct = await Product.create(productData);
+      return newProduct;
+    } catch (error) {
+      throw boom.badImplementation("Error creating product", error);
     }
+  }
 
-    emulate(limit){
-        for(let i = 0; i < limit; i++){
-            this.products.push({
-                name: faker.commerce.productName(),
-                price: faker.commerce.price()
-            });
-        }
+  async find() {
+    try {
+      // Buscar todos los productos usando el modelo de Sequelize
+      const products = await Product.findAll();
+      return products;
+    } catch (error) {
+      throw boom.badImplementation("Error finding products", error);
     }
+  }
 
-    create(){
-
+  async findOne(id) {
+    try {
+      // Buscar un producto por su ID usando el modelo de Sequelize
+      const product = await Product.findByPk(id);
+      if (!product) {
+        throw boom.notFound("Product Id not found");
+      }
+      return product;
+    } catch (error) {
+      throw boom.badImplementation("Error finding product", error);
     }
+  }
 
-    find(){
-        return this.products;
+  async delete(id) {
+    try {
+      // Eliminar un producto por su ID usando el modelo de Sequelize
+      const deletedProductCount = await Product.destroy({
+        where: { id }
+      });
+      if (deletedProductCount === 0) {
+        throw boom.notFound("Product Id not found");
+      }
+      return { message: "Product deleted successfully" };
+    } catch (error) {
+      throw boom.badImplementation("Error deleting product", error);
     }
+  }
 
-    findOne(){
-
+  async update(id, newData) {
+    try {
+      const [updatedRowsCount, updatedRows] = await Product.update(newData, {
+        where: { id },
+        returning: true // Retorna los registros actualizados
+      });
+      if (updatedRowsCount === 0) {
+        throw boom.notFound("Product Id not found");
+      }
+      return updatedRows[0]; // Retorna el primer registro actualizado
+    } catch (error) {
+      throw boom.badImplementation("Error updating product", error);
     }
-
-    delete(){
-
-    }
-
+  }
 }
 
-module.exports = Products;
+module.exports = ProductsController;
